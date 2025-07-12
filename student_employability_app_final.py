@@ -14,6 +14,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
+import matplotlib.pyplot as plt
 
 # --- Configuration ---
 st.set_page_config(page_title="Student Employability Predictor", layout="centered")
@@ -36,9 +37,9 @@ except FileNotFoundError:
     """)
     st.stop()
 
-st.title("🎓 Student Employability Prediction App")
+st.title("🎓 Student Employability Prediction App — SVM Model")
 st.markdown("""
-    Welcome to the Student Employability Predictor! Adjust the sliders and options below to test different scenarios.
+    The best model created — **Support Vector Machine (SVM)** — was applied to the employment prediction system. Adjust the sliders and options below to test different scenarios.
 """)
 st.markdown("---")
 
@@ -93,8 +94,30 @@ if st.button("Predict Employability"):
     if prediction_proba[0][1] < 50:
         st.markdown("> ℹ️ Note: The model seems to favor predicting 'Less Employable' — consider checking your training data balance and whether SMOTE was applied properly.")
 
+    # --- Bar Chart of Probabilities ---
+    fig, ax = plt.subplots()
+    ax.bar(['Less Employable', 'Employable'], prediction_proba[0]*100, color=['red', 'green'])
+    ax.set_ylabel('Probability (%)')
+    ax.set_ylim(0,100)
+    ax.set_title('Prediction Probabilities')
+    st.pyplot(fig)
+
+    # --- Append prediction log ---
+    log = pd.DataFrame({
+        'Employable (%)': [prediction_proba[0][1]*100],
+        'Less Employable (%)': [prediction_proba[0][0]*100]
+    })
+    if 'prediction_log' not in st.session_state:
+        st.session_state['prediction_log'] = log
+    else:
+        st.session_state['prediction_log'] = pd.concat([st.session_state['prediction_log'], log], ignore_index=True)
+
+    st.markdown("---")
+    st.subheader("Prediction Log")
+    st.dataframe(st.session_state['prediction_log'])
+
     st.markdown("""
-        <small><i>Disclaimer: This prediction is based on the trained machine learning model and the attributes you provided. Use as guidance only.</i></small>
+        <small><i>Disclaimer: This prediction is based on the best SVM model trained and the attributes you provided. Use as guidance only.</i></small>
     """, unsafe_allow_html=True)
 
 st.markdown("---")
@@ -105,4 +128,5 @@ st.markdown("""
         Version 1.0 | Last updated: Aug-2025 | Developed by Mr.CHOONG MUH IN (TP068331)
     </div>
     """, unsafe_allow_html=True)
-st.caption("© 2025 CHOONG MUH IN / APU University | Graduate Employability Prediction App | For research purposes only.")
+st.caption("© 2025 CHOONG MUH IN / APU University | Graduate Employability Prediction App | Powered by SVM Model | For research purposes only.")
+
