@@ -9,311 +9,161 @@ Original file is located at
 
 # advanced_employability_app_final.py
 
-# streamlit_app.py
-
 import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
 
 # Load the trained model and scaler
-# This block handles loading the necessary files for prediction.
-# It includes error handling in case the files are not found.
+# Ensure these files are in the same directory as your streamlit_app.py or accessible via a defined path
 try:
     model = joblib.load('employability_predictor.pkl')
     scaler = joblib.load('scaler.pkl')
 except FileNotFoundError:
-    st.error("Error: Model or scaler files not found. Please ensure 'employability_predictor.pkl' and 'scaler.pkl' are in the same directory.")
-    st.stop() # Stop the app if files are not found
+    st.error("Model or scaler file not found. Please ensure 'employability_predictor.pkl' and 'scaler.pkl' are in the correct directory.")
+    st.stop() # Stop the app if essential files are missing
 
-# Define the expected feature names based on your training data.
-# THIS LIST HAS BEEN UPDATED TO MATCH THE SCALER'S EXPECTATIONS
-expected_features = [
-    'CGPA',
-    'PROJECTS',
-    'INTERNSHIPS',
-    'WORKSHOPS',
-    'CERTIFICATIONS',
-    'AWARDS',
-    'SCHOLARSHIPS',
-    'EXTRACURRICULAR',
-    'APTITUDE_TEST_SCORE', # Moved this up to match original dataset order
-    'SOFT_SKILLS',
-    'COMMUNICATION_SKILLS',
-    'PROBLEM_SOLVING_SKILLS',
-    'LEADERSHIP_SKILLS',
-    'TEAMWORK_SKILLS',
-    'CRITICAL_THINKING_SKILLS',
-    'ADAPTABILITY_SKILLS',
-    'TIME_MANAGEMENT_SKILLS',
-    'ENTREPRENEURSHIP_SKILLS',
-    'RESEARCH_SKILLS',
-    'PRESENTATION_SKILLS',
-    'NETWORKING_SKILLS',
-    'STUDENT_PERFORMANCE_RATING',
-    'GENDER', # NEWLY ADDED FEATURE
-    'GENERAL_POINT_AVERAGE', # NEWLY ADDED FEATURE
-    'GENERAL_APPEARANCE', # NEWLY ADDED FEATURE
-    'MANNER_OF_SPEAKING', # NEWLY ADDED FEATURE
-    'ABILITY_TO_PRESENT_IDEAS' # NEWLY ADDED FEATURE
-]
+st.set_page_config(page_title="Student Employability Predictor", layout="centered")
 
-
-# --- Streamlit App Configuration ---
-# Sets up the basic page settings like title, icon, and layout.
-st.set_page_config(
-    page_title="Student Employability Predictor",
-    page_icon="🎓", # You can keep this emoji icon, it doesn't require a file
-    layout="centered", # 'centered' or 'wide'
-    initial_sidebar_state="expanded" # 'auto', 'expanded', or 'collapsed'
-)
-
-# --- Custom CSS for Professional and Nice Look ---
-# This section injects custom CSS to style various Streamlit components
-# and create a visually appealing user interface.
+st.title("🎓 Student Employability Prediction")
 st.markdown("""
-    <style>
-    /* Main header styling */
-    .main-header {
-        font-size: 3em;
-        color: #2E86C1; /* A shade of blue */
-        text-align: center;
-        margin-bottom: 0.5em;
-        font-weight: bold;
-    }
-    /* Sub-header styling */
-    .sub-header {
-        font-size: 1.5em;
-        color: #34495E; /* Darker grey */
-        text-align: center;
-        margin-bottom: 1.5em;
-    }
-    /* Button styling */
-    .stButton>button {
-        background-color: #28B463; /* Green */
-        color: white;
-        font-size: 1.2em;
-        padding: 0.8em 1.5em;
-        border-radius: 0.5em;
-        border: none;
-        transition: background-color 0.3s; /* Smooth transition on hover */
-    }
-    .stButton>button:hover {
-        background-color: #239B56; /* Darker green on hover */
-    }
-    /* Text input styling */
-    .stTextInput>div>div>input {
-        border-radius: 0.5em;
-        border: 1px solid #D5DBDB; /* Light grey border */
-        padding: 0.5em;
-    }
-    /* Selectbox styling */
-    .stSelectbox>div>div {
-        border-radius: 0.5em;
-        border: 1px solid #D5DBDB;
-        padding: 0.3em;
-    }
-    /* Slider styling */
-    .stSlider>div>div>div>div {
-        background-color: #2E86C1; /* Blue slider track */
-    }
-    /* Prediction box styling (general) */
-    .prediction-box {
-        background-color: #EBF5FB; /* Light blue background */
-        border-left: 8px solid #2E86C1; /* Blue left border */
-        padding: 1.5em;
-        border-radius: 0.8em;
-        margin-top: 2em;
-        text-align: center;
-        font-size: 1.8em;
-        font-weight: bold;
-        color: #2E86C1;
-    }
-    /* Prediction box styling (Employable) */
-    .prediction-box.employable {
-        border-left-color: #28B463; /* Green border */
-        color: #28B463; /* Green text */
-        background-color: #E8F8F5; /* Light green background */
-    }
-    /* Prediction box styling (Less Employable) */
-    .prediction-box.less-employable {
-        border-left-color: #E74C3C; /* Red border */
-        color: #E74C3C; /* Red text */
-        background-color: #FDEDEC; /* Light red background */
-    }
-    /* Alert box styling */
-    .stAlert {
-        border-radius: 0.5em;
-    }
-    /* Footer information styling */
-    .footer-info {
-        font-size: 0.85em;
-        color: #7F8C8D; /* Grey text */
-        text-align: center;
-        margin-top: 3em;
-    }
-    /* Header container for title alignment (image removed) */
-    .header-container {
-        display: flex; /* Use flexbox for alignment */
-        align-items: center; /* Vertically align items in the center */
-        justify-content: center; /* Horizontally center items */
-        /* gap: 15px; Removed as there's no image to gap with */
-        margin-bottom: 1em;
-    }
-    </style>
-    """, unsafe_allow_html=True) # unsafe_allow_html is needed to inject custom HTML/CSS
+    This application predicts the employability of a student based on various academic and personal attributes.
+    Please enter the student's details below to get a prediction.
+""")
 
-# --- Header Section (Image Removed) ---
-# This section creates the main header of the application, now only with the title.
-st.markdown('<div class="header-container">', unsafe_allow_html=True)
-# The main title, with a slight adjustment to margin-bottom to fit the flex layout.
-st.markdown('<p class="main-header" style="margin-bottom:0;">Student Employability Predictor</p>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True) # Close the header container div
+# --- Input Features ---
+st.header("Student Information")
 
-# Sub-header providing a brief description of the app's purpose.
-st.markdown('<p class="sub-header">Predicting student employability based on various academic and skill metrics.</p>', unsafe_allow_html=True)
+# Define input fields based on the features used in your model (X.columns.tolist())
+# You need to ensure the order and names of these features match your training data.
+# Based on the provided notebook, the features are:
+# 'STUDENT_PERFORMANCE_RATING', 'PROJECT_COMPLETION_RATE', 'INTERNSHIP_EXPERIENCE',
+# 'COMMUNICATION_SKILLS', 'PROBLEM_SOLVING_SKILLS', 'TEAMWORK_SKILLS',
+# 'LEADERSHIP_SKILLS', 'CRITICAL_THINKING_SKILLS', 'ADAPTABILITY',
+# 'TIME_MANAGEMENT_SKILLS', 'GPA', 'EXTRACURRICULAR_ACTIVITIES',
+# 'VOLUNTEERING_EXPERIENCE', 'CERTIFICATIONS', 'WORK_EXPERIENCE',
+# 'CAREER_GOALS_ALIGNMENT', 'JOB_FAIR_ATTENDANCE', 'NETWORKING_EVENTS_ATTENDED',
+# 'MOCK_INTERVIEW_PERFORMANCE', 'RESUME_STRENGTH', 'RECOMMENDATION_LETTERS',
+# 'ONLINE_PRESENCE', 'SOFT_SKILLS_ASSESSMENT', 'TECHNICAL_SKILLS_ASSESSMENT',
+# 'ATTENDANCE_RATE', 'PRACTICAL_SKILLS_SCORE', 'RESEARCH_PAPER_PUBLISHED',
+# 'AWARDS_ACHIEVEMENTS', 'ENTREPRENEURIAL_INITIATIVES', 'GLOBAL_EXPOSURE'
 
-st.write("---") # A horizontal line for visual separation
+# Example input fields (adjust based on your actual features and their ranges)
+# For simplicity, I'll use a few examples. You'll need to add all 30 features.
 
-# --- Input Features Section ---
-# This section provides interactive widgets for users to input student data.
-st.header("Student Profile Input")
-
-# Using columns to organize input fields into two vertical sections for better readability.
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Academic & Project Details")
-    # Sliders for numerical inputs, with default values and ranges.
-    cgpa = st.slider("CGPA (Cumulative Grade Point Average)", 0.0, 10.0, 7.5, 0.1)
-    projects = st.slider("Number of Projects Completed", 0, 10, 3)
-    internships = st.slider("Number of Internships", 0, 5, 1)
-    workshops = st.slider("Number of Workshops Attended", 0, 10, 2)
-    certifications = st.slider("Number of Certifications", 0, 10, 2)
-    awards = st.slider("Number of Awards/Honors", 0, 5, 0)
-    scholarships = st.slider("Number of Scholarships Received", 0, 3, 0)
-    extracurricular = st.slider("Number of Extracurricular Activities", 0, 10, 3)
-    student_performance_rating = st.slider("Student Performance Rating (1-5)", 1, 5, 3)
-    # NEWLY ADDED INPUTS FOR ACADEMIC/GENERAL
-    general_point_average = st.slider("General Point Average (GPA)", 0.0, 5.0, 3.0, 0.1)
+    student_performance_rating = st.slider("Student Performance Rating (1-5)", 1.0, 5.0, 3.0, 0.1)
+    project_completion_rate = st.slider("Project Completion Rate (%)", 0.0, 100.0, 75.0, 1.0)
+    gpa = st.number_input("GPA (0.0-4.0)", min_value=0.0, max_value=4.0, value=3.0, step=0.01)
+    internship_experience = st.radio("Internship Experience", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    attendance_rate = st.slider("Attendance Rate (%)", 0.0, 100.0, 90.0, 1.0)
+    practical_skills_score = st.slider("Practical Skills Score (1-5)", 1.0, 5.0, 3.0, 0.1)
+    research_paper_published = st.radio("Research Paper Published", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    awards_achievements = st.radio("Awards/Achievements", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    entrepreneurial_initiatives = st.radio("Entrepreneurial Initiatives", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    global_exposure = st.radio("Global Exposure", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
 
 
 with col2:
-    st.subheader("Skill Assessment")
-    # Sliders for skill ratings, typically on a Likert-type scale (1-5).
-    aptitude_test_score = st.slider("Aptitude Test Score (0-100)", 0, 100, 60) # Moved up to match order
-    soft_skills = st.slider("Soft Skills Rating (1-5)", 1, 5, 3)
-    communication_skills = st.slider("Communication Skills Rating (1-5)", 1, 5, 3)
-    problem_solving_skills = st.slider("Problem Solving Skills Rating (1-5)", 1, 5, 3)
-    leadership_skills = st.slider("Leadership Skills Rating (1-5)", 1, 5, 3)
-    teamwork_skills = st.slider("Teamwork Skills Rating (1-5)", 1, 5, 3)
-    critical_thinking_skills = st.slider("Critical Thinking Skills Rating (1-5)", 1, 5, 3)
-    adaptability_skills = st.slider("Adaptability Skills Rating (1-5)", 1, 5, 3)
-    time_management_skills = st.slider("Time Management Skills Rating (1-5)", 1, 5, 3)
-    entrepreneurship_skills = st.slider("Entrepreneurship Skills Rating (1-5)", 1, 5, 3)
-    research_skills = st.slider("Research Skills Rating (1-5)", 1, 5, 3)
-    presentation_skills = st.slider("Presentation Skills Rating (1-5)", 1, 5, 3)
-    networking_skills = st.slider("Networking Skills Rating (1-5)", 1, 5, 3)
-    # NEWLY ADDED INPUTS FOR SKILLS/APPEARANCE
-    ability_to_present_ideas = st.slider("Ability to Present Ideas (1-5)", 1, 5, 3)
-    manner_of_speaking = st.slider("Manner of Speaking (1-5)", 1, 5, 3)
-    general_appearance = st.slider("General Appearance (1-5)", 1, 5, 3)
+    st.subheader("Skills & Other Attributes")
+    communication_skills = st.slider("Communication Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
+    problem_solving_skills = st.slider("Problem Solving Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
+    teamwork_skills = st.slider("Teamwork Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
+    leadership_skills = st.slider("Leadership Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
+    critical_thinking_skills = st.slider("Critical Thinking Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
+    adaptability = st.slider("Adaptability (1-5)", 1.0, 5.0, 3.0, 0.1)
+    time_management_skills = st.slider("Time Management Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
+    extracurricular_activities = st.radio("Extracurricular Activities", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    volunteering_experience = st.radio("Volunteering Experience", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    certifications = st.radio("Certifications", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    work_experience = st.radio("Work Experience", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    career_goals_alignment = st.slider("Career Goals Alignment (1-5)", 1.0, 5.0, 3.0, 0.1)
+    job_fair_attendance = st.radio("Job Fair Attendance", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    networking_events_attended = st.radio("Networking Events Attended", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    mock_interview_performance = st.slider("Mock Interview Performance (1-5)", 1.0, 5.0, 3.0, 0.1)
+    resume_strength = st.slider("Resume Strength (1-5)", 1.0, 5.0, 3.0, 0.1)
+    recommendation_letters = st.radio("Recommendation Letters", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+    online_presence = st.slider("Online Presence (1-5)", 1.0, 5.0, 3.0, 0.1)
+    soft_skills_assessment = st.slider("Soft Skills Assessment (1-5)", 1.0, 5.0, 3.0, 0.1)
+    technical_skills_assessment = st.slider("Technical Skills Assessment (1-5)", 1.0, 5.0, 3.0, 0.1)
 
 
-# NEW SECTION FOR GENDER (as it's a categorical feature)
-st.subheader("Demographic Details")
-gender = st.selectbox("Gender", options=[0, 1], format_func=lambda x: "Female" if x == 0 else "Male")
-# Assuming 0 for Female, 1 for Male based on typical encoding.
-# If your original data used different encoding (e.g., 1 for Female, 0 for Male, or string labels),
-# you MUST adjust this `format_func` and the `options` accordingly.
-# Check your notebook's data preprocessing for 'GENDER' if you're unsure.
+# Create a DataFrame from the inputs, ensuring column order matches training data
+# IMPORTANT: The order of columns in this DataFrame MUST match the order of features
+# that your model was trained on. You can get this order from X.columns.tolist()
+# after dropping 'CLASS' in your notebook.
+input_data = pd.DataFrame([[
+    student_performance_rating,
+    project_completion_rate,
+    internship_experience,
+    communication_skills,
+    problem_solving_skills,
+    teamwork_skills,
+    leadership_skills,
+    critical_thinking_skills,
+    adaptability,
+    time_management_skills,
+    gpa,
+    extracurricular_activities,
+    volunteering_experience,
+    certifications,
+    work_experience,
+    career_goals_alignment,
+    job_fair_attendance,
+    networking_events_attended,
+    mock_interview_performance,
+    resume_strength,
+    recommendation_letters,
+    online_presence,
+    soft_skills_assessment,
+    technical_skills_assessment,
+    attendance_rate,
+    practical_skills_score,
+    research_paper_published,
+    awards_achievements,
+    entrepreneurial_initiatives,
+    global_exposure
+]], columns=[
+    'STUDENT_PERFORMANCE_RATING', 'PROJECT_COMPLETION_RATE', 'INTERNSHIP_EXPERIENCE',
+    'COMMUNICATION_SKILLS', 'PROBLEM_SOLVING_SKILLS', 'TEAMWORK_SKILLS',
+    'LEADERSHIP_SKILLS', 'CRITICAL_THINKING_SKILLS', 'ADAPTABILITY',
+    'TIME_MANAGEMENT_SKILLS', 'GPA', 'EXTRACURRICULAR_ACTIVITIES',
+    'VOLUNTEERING_EXPERIENCE', 'CERTIFICATIONS', 'WORK_EXPERIENCE',
+    'CAREER_GOALS_ALIGNMENT', 'JOB_FAIR_ATTENDANCE', 'NETWORKING_EVENTS_ATTENDED',
+    'MOCK_INTERVIEW_PERFORMANCE', 'RESUME_STRENGTH', 'RECOMMENDATION_LETTERS',
+    'ONLINE_PRESENCE', 'SOFT_SKILLS_ASSESSMENT', 'TECHNICAL_SKILLS_ASSESSMENT',
+    'ATTENDANCE_RATE', 'PRACTICAL_SKILLS_SCORE', 'RESEARCH_PAPER_PUBLISHED',
+    'AWARDS_ACHIEVEMENTS', 'ENTREPRENEURIAL_INITIATIVES', 'GLOBAL_EXPOSURE'
+])
 
-
-st.write("---") # Another horizontal line
-
-# --- Prediction Button and Logic ---
-# This block executes when the "Predict Employability" button is clicked.
-# It performs data preparation, scaling, prediction, and displays the results.
+# --- Prediction ---
 if st.button("Predict Employability"):
-    # Create a Pandas DataFrame from the collected input values.
-    # The 'columns' argument ensures the feature names and order match 'expected_features'.
-    # ENSURE THE ORDER HERE MATCHES THE 'expected_features' LIST EXACTLY!
-    input_data = pd.DataFrame([[
-        cgpa, projects, internships, workshops, certifications, awards,
-        scholarships, extracurricular, aptitude_test_score, soft_skills, # aptitude_test_score moved
-        communication_skills, problem_solving_skills, leadership_skills,
-        teamwork_skills, critical_thinking_skills, adaptability_skills,
-        time_management_skills, entrepreneurship_skills, research_skills,
-        presentation_skills, networking_skills, student_performance_rating,
-        gender, # NEWLY ADDED
-        general_point_average, # NEWLY ADDED
-        general_appearance, # NEWLY ADDED
-        manner_of_speaking, # NEWLY ADDED
-        ability_to_present_ideas # NEWLY ADDED
-    ]], columns=expected_features)
+    # Scale the input data using the loaded scaler
+    # Ensure the scaler was trained on the same features and in the same order
+    scaled_input = scaler.transform(input_data)
 
-    # Scale the input data using the pre-fitted scaler.
-    # This step is crucial as the model expects scaled input.
-    # Includes error handling for potential issues during scaling.
-    try:
-        scaled_input = scaler.transform(input_data)
-    except Exception as e:
-        st.error(f"Error during scaling: {e}. This might happen if the number of input features does not match the scaler's expected features.")
-        st.stop()
-
-    # Make the employability prediction (0 or 1).
+    # Make prediction
     prediction = model.predict(scaled_input)
-    # Get the probability scores for each class (Employable/Less Employable).
     prediction_proba = model.predict_proba(scaled_input)
 
-    # Extract probabilities for better user feedback.
-    employable_proba = prediction_proba[0][1] # Probability of being Employable (CLASS=1)
-    less_employable_proba = prediction_proba[0][0] # Probability of being Less Employable (CLASS=0)
-
-    st.subheader("Prediction Result:")
-    # Display the prediction result with distinct styling based on the outcome.
+    st.subheader("Prediction Result")
     if prediction[0] == 1:
-        st.markdown(f"""
-            <div class="prediction-box employable">
-                Employable! 🎉
-            </div>
-            <p style='text-align: center; margin-top: 1em; font-size: 1.1em;'>
-                Probability of being Employable: <strong>{employable_proba:.2%}</strong>
-            </p>
-            """, unsafe_allow_html=True)
-        st.balloons() # Fun animation for positive outcome
+        st.success(f"The student is predicted to be **Employable**!")
+        st.balloons()
     else:
-        st.markdown(f"""
-            <div class="prediction-box less-employable">
-                Less Employable 🙁
-            </div>
-            <p style='text-align: center; margin-top: 1em; font-size: 1.1em;'>
-                Probability of being Less Employable: <strong>{less_employable_proba:.2%}</strong>
-            </p>
-            """, unsafe_allow_html=True)
-        st.warning("Consider focusing on skill development and academic performance to improve employability.")
+        st.warning(f"The student is predicted to be **Less Employable**.")
 
-st.write("---") # Another horizontal line
-# Informational message about the nature of the prediction.
-st.info("This prediction is based on a machine learning model and should be used as a guide. Actual employability depends on many factors.")
+    st.markdown(f"**Probability of being Employable:** {prediction_proba[0][1]*100:.2f}%")
+    st.markdown(f"**Probability of being Less Employable:** {prediction_proba[0][0]*100:.2f}%")
 
-# --- Expander for "About This Predictor" ---
-# Provides additional details about the model and features, hidden by default.
-with st.expander("About This Predictor"):
-    st.write("""
-        This application uses a machine learning model (specifically, an SVM model)
-        trained on a dataset of student academic records and skill assessments to predict
-        their employability status (Employable or Less Employable).
+    st.info("Disclaimer: This prediction is based on the trained model and provided inputs. It should be used as a guide and not as a definitive statement.")
 
-        **Key Features Used for Prediction:**
-        - **Academic Performance:** CGPA, Student Performance Rating, General Point Average.
-        - **Experience & Achievements:** Projects, Internships, Workshops, Certifications, Awards, Scholarships, Extracurricular activities.
-        - **Skills:** Soft Skills, Aptitude Test Score, Communication, Problem Solving, Leadership, Teamwork, Critical Thinking, Adaptability, Time Management, Entrepreneurship, Research, Presentation, Networking Skills, Ability to Present Ideas, Manner of Speaking.
-        - **Demographics:** Gender, General Appearance.
+st.markdown("---")
+st.markdown("Developed by Your Name/Team Name")
 
-        The model was trained using a GridSearchCV approach to find the best hyperparameters
-        and SMOTE for handling class imbalance.
-    """)
 
 # --- Footer Information ---
 # Displays version, update, developer, and copyright information at the bottom of the page.
