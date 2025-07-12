@@ -12,7 +12,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import matplotlib.pyplot as plt
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Student Employability Predictor", layout="centered")
@@ -90,27 +89,6 @@ def show_results(pred, proba, input_df):
     st.info(f"Probability of being Employable: {proba[1]*100:.2f}%")
     st.info(f"Probability of being Less Employable: {proba[0]*100:.2f}%")
 
-    fig, ax = plt.subplots()
-    ax.bar(['Less Employable', 'Employable'], proba*100, color=['red', 'green'])
-    ax.set_ylabel('Probability (%)')
-    ax.set_ylim(0, 100)
-    ax.set_title('Prediction Probabilities')
-    st.pyplot(fig)
-
-    if 'prediction_log' not in st.session_state:
-        st.session_state['prediction_log'] = pd.DataFrame(columns=['Employable (%)', 'Less Employable (%)'])
-
-    st.session_state['prediction_log'] = pd.concat([
-        st.session_state['prediction_log'],
-        pd.DataFrame({'Employable (%)': [proba[1]*100], 'Less Employable (%)': [proba[0]*100]})
-    ], ignore_index=True)
-
-    st.subheader("Prediction Log")
-    st.dataframe(st.session_state['prediction_log'])
-
-    csv = st.session_state['prediction_log'].to_csv(index=False).encode('utf-8')
-    st.download_button("Download Prediction Log", data=csv, file_name='prediction_log.csv', mime='text/csv')
-
 # --- MAIN ---
 input_df = get_user_input()
 
@@ -123,4 +101,5 @@ if st.button("Predict Employability"):
 
 st.markdown("---")
 st.caption("© 2025 CHOONG MUH IN | Graduate Employability Prediction App | Powered by SVM | For research purposes only.")
+
 
