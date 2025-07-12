@@ -9,175 +9,317 @@ Original file is located at
 
 # advanced_employability_app_final.py
 
+# streamlit_app.py
+
 import streamlit as st
 import pandas as pd
+import joblib
 import numpy as np
-import pickle
-from datetime import datetime
-import base64
-import matplotlib.pyplot as plt
 
-# --- Load Model & Scaler ---
-# Load trained SVM model
-with open("svm_model.pkl", "rb") as f:
-    model = pickle.load(f)
+# Load the trained model and scaler
+# This block handles loading the necessary files for prediction.
+# It includes error handling in case the files are not found.
+try:
+    model = joblib.load('employability_predictor.pkl')
+    scaler = joblib.load('scaler.pkl')
+except FileNotFoundError:
+    st.error("Error: Model or scaler files not found. Please ensure 'employability_predictor.pkl' and 'scaler.pkl' are in the same directory.")
+    st.stop() # Stop the app if files are not found
 
-# Load scaler used in training
-with open("scaler.pkl", "rb") as f:
-    scaler = pickle.load(f)
-
-# --- Utility Functions ---
-
-def generate_pdf_report(data, result, confidence):
-    """
-    Create and save a PDF report summarizing the prediction.
-    """
-    from fpdf import FPDF
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-
-    pdf.cell(200, 10, txt="Employability Prediction Report", ln=True, align="C")
-    pdf.ln(10)
-
-    for k, v in data.items():
-        pdf.cell(200, 10, txt=f"{k}: {v}", ln=True)
-
-    pdf.ln(5)
-    pdf.cell(200, 10, txt=f"Prediction: {result}", ln=True)
-    pdf.cell(200, 10, txt=f"Confidence: {confidence:.2f}", ln=True)
-
-    file_path = "prediction_report.pdf"
-    pdf.output(file_path)
-    return file_path
-
-def get_pdf_download_link(file_path):
-    """
-    Generate a download link for the PDF report.
-    """
-    with open(file_path, "rb") as f:
-        b64 = base64.b64encode(f.read()).decode()
-    href = f'<a href="data:application/octet-stream;base64,{b64}" download="prediction_report.pdf">📄 Download PDF Report</a>'
-    return href
+# Define the expected feature names based on your training data.
+# THIS LIST HAS BEEN UPDATED TO MATCH THE SCALER'S EXPECTATIONS
+expected_features = [
+    'CGPA',
+    'PROJECTS',
+    'INTERNSHIPS',
+    'WORKSHOPS',
+    'CERTIFICATIONS',
+    'AWARDS',
+    'SCHOLARSHIPS',
+    'EXTRACURRICULAR',
+    'APTITUDE_TEST_SCORE', # Moved this up to match original dataset order
+    'SOFT_SKILLS',
+    'COMMUNICATION_SKILLS',
+    'PROBLEM_SOLVING_SKILLS',
+    'LEADERSHIP_SKILLS',
+    'TEAMWORK_SKILLS',
+    'CRITICAL_THINKING_SKILLS',
+    'ADAPTABILITY_SKILLS',
+    'TIME_MANAGEMENT_SKILLS',
+    'ENTREPRENEURSHIP_SKILLS',
+    'RESEARCH_SKILLS',
+    'PRESENTATION_SKILLS',
+    'NETWORKING_SKILLS',
+    'STUDENT_PERFORMANCE_RATING',
+    'GENDER', # NEWLY ADDED FEATURE
+    'GENERAL_POINT_AVERAGE', # NEWLY ADDED FEATURE
+    'GENERAL_APPEARANCE', # NEWLY ADDED FEATURE
+    'MANNER_OF_SPEAKING', # NEWLY ADDED FEATURE
+    'ABILITY_TO_PRESENT_IDEAS' # NEWLY ADDED FEATURE
+]
 
 
-# --- Streamlit App Setup ---
+# --- Streamlit App Configuration ---
+# Sets up the basic page settings like title, icon, and layout.
 st.set_page_config(
-    page_title="Graduate Employability Prediction",
-    page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Student Employability Predictor",
+    page_icon="🎓", # You can keep this emoji icon, it doesn't require a file
+    layout="centered", # 'centered' or 'wide'
+    initial_sidebar_state="expanded" # 'auto', 'expanded', or 'collapsed'
 )
 
-# --- Sidebar Content ---
-st.sidebar.image(
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/UNESCO_logo.svg/2560px-UNESCO_logo.svg.png",
-    width=200
-)
+# --- Custom CSS for Professional and Nice Look ---
+# This section injects custom CSS to style various Streamlit components
+# and create a visually appealing user interface.
+st.markdown("""
+    <style>
+    /* Main header styling */
+    .main-header {
+        font-size: 3em;
+        color: #2E86C1; /* A shade of blue */
+        text-align: center;
+        margin-bottom: 0.5em;
+        font-weight: bold;
+    }
+    /* Sub-header styling */
+    .sub-header {
+        font-size: 1.5em;
+        color: #34495E; /* Darker grey */
+        text-align: center;
+        margin-bottom: 1.5em;
+    }
+    /* Button styling */
+    .stButton>button {
+        background-color: #28B463; /* Green */
+        color: white;
+        font-size: 1.2em;
+        padding: 0.8em 1.5em;
+        border-radius: 0.5em;
+        border: none;
+        transition: background-color 0.3s; /* Smooth transition on hover */
+    }
+    .stButton>button:hover {
+        background-color: #239B56; /* Darker green on hover */
+    }
+    /* Text input styling */
+    .stTextInput>div>div>input {
+        border-radius: 0.5em;
+        border: 1px solid #D5DBDB; /* Light grey border */
+        padding: 0.5em;
+    }
+    /* Selectbox styling */
+    .stSelectbox>div>div {
+        border-radius: 0.5em;
+        border: 1px solid #D5DBDB;
+        padding: 0.3em;
+    }
+    /* Slider styling */
+    .stSlider>div>div>div>div {
+        background-color: #2E86C1; /* Blue slider track */
+    }
+    /* Prediction box styling (general) */
+    .prediction-box {
+        background-color: #EBF5FB; /* Light blue background */
+        border-left: 8px solid #2E86C1; /* Blue left border */
+        padding: 1.5em;
+        border-radius: 0.8em;
+        margin-top: 2em;
+        text-align: center;
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #2E86C1;
+    }
+    /* Prediction box styling (Employable) */
+    .prediction-box.employable {
+        border-left-color: #28B463; /* Green border */
+        color: #28B463; /* Green text */
+        background-color: #E8F8F5; /* Light green background */
+    }
+    /* Prediction box styling (Less Employable) */
+    .prediction-box.less-employable {
+        border-left-color: #E74C3C; /* Red border */
+        color: #E74C3C; /* Red text */
+        background-color: #FDEDEC; /* Light red background */
+    }
+    /* Alert box styling */
+    .stAlert {
+        border-radius: 0.5em;
+    }
+    /* Footer information styling */
+    .footer-info {
+        font-size: 0.85em;
+        color: #7F8C8D; /* Grey text */
+        text-align: center;
+        margin-top: 3em;
+    }
+    /* Header container for title alignment (image removed) */
+    .header-container {
+        display: flex; /* Use flexbox for alignment */
+        align-items: center; /* Vertically align items in the center */
+        justify-content: center; /* Horizontally center items */
+        /* gap: 15px; Removed as there's no image to gap with */
+        margin-bottom: 1em;
+    }
+    </style>
+    """, unsafe_allow_html=True) # unsafe_allow_html is needed to inject custom HTML/CSS
 
-st.sidebar.title("About This App")
-st.sidebar.markdown("""
-This app predicts **graduate employability** based on academic and experiential attributes:
-- GPA
-- Internship
-- Mock Interview
-- Soft Skills
-- Extracurricular
+# --- Header Section (Image Removed) ---
+# This section creates the main header of the application, now only with the title.
+st.markdown('<div class="header-container">', unsafe_allow_html=True)
+# The main title, with a slight adjustment to margin-bottom to fit the flex layout.
+st.markdown('<p class="main-header" style="margin-bottom:0;">Student Employability Predictor</p>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True) # Close the header container div
 
-Uses a trained **Support Vector Machine (SVM)** model optimised with SMOTE.
-Outputs: Prediction, confidence, feature insights, downloadable PDF report.
+# Sub-header providing a brief description of the app's purpose.
+st.markdown('<p class="sub-header">Predicting student employability based on various academic and skill metrics.</p>', unsafe_allow_html=True)
 
----
-Developed for MSc Capstone Project.
-""")
+st.write("---") # A horizontal line for visual separation
 
-st.sidebar.info("Version: 2.0 | Last Updated: 2025-07-06")
+# --- Input Features Section ---
+# This section provides interactive widgets for users to input student data.
+st.header("Student Profile Input")
 
-# --- Main Header ---
-st.title("🎓 Advanced Graduate Employability Dashboard")
-st.subheader("Empowering HEIs with actionable, data-driven insights.")
+# Using columns to organize input fields into two vertical sections for better readability.
+col1, col2 = st.columns(2)
 
-# --- Tabs for Navigation ---
-tab1, tab2, tab3 = st.tabs(["📋 Input Form", "📊 Feature Insights", "📄 Report"])
+with col1:
+    st.subheader("Academic & Project Details")
+    # Sliders for numerical inputs, with default values and ranges.
+    cgpa = st.slider("CGPA (Cumulative Grade Point Average)", 0.0, 10.0, 7.5, 0.1)
+    projects = st.slider("Number of Projects Completed", 0, 10, 3)
+    internships = st.slider("Number of Internships", 0, 5, 1)
+    workshops = st.slider("Number of Workshops Attended", 0, 10, 2)
+    certifications = st.slider("Number of Certifications", 0, 10, 2)
+    awards = st.slider("Number of Awards/Honors", 0, 5, 0)
+    scholarships = st.slider("Number of Scholarships Received", 0, 3, 0)
+    extracurricular = st.slider("Number of Extracurricular Activities", 0, 10, 3)
+    student_performance_rating = st.slider("Student Performance Rating (1-5)", 1, 5, 3)
+    # NEWLY ADDED INPUTS FOR ACADEMIC/GENERAL
+    general_point_average = st.slider("General Point Average (GPA)", 0.0, 5.0, 3.0, 0.1)
 
-# ---------------- Tab 1: Input Form ----------------
-with tab1:
-    st.header("📋 Student Profile Input")
 
-    with st.form("input_form", clear_on_submit=False):
-        col1, col2, col3 = st.columns(3)
+with col2:
+    st.subheader("Skill Assessment")
+    # Sliders for skill ratings, typically on a Likert-type scale (1-5).
+    aptitude_test_score = st.slider("Aptitude Test Score (0-100)", 0, 100, 60) # Moved up to match order
+    soft_skills = st.slider("Soft Skills Rating (1-5)", 1, 5, 3)
+    communication_skills = st.slider("Communication Skills Rating (1-5)", 1, 5, 3)
+    problem_solving_skills = st.slider("Problem Solving Skills Rating (1-5)", 1, 5, 3)
+    leadership_skills = st.slider("Leadership Skills Rating (1-5)", 1, 5, 3)
+    teamwork_skills = st.slider("Teamwork Skills Rating (1-5)", 1, 5, 3)
+    critical_thinking_skills = st.slider("Critical Thinking Skills Rating (1-5)", 1, 5, 3)
+    adaptability_skills = st.slider("Adaptability Skills Rating (1-5)", 1, 5, 3)
+    time_management_skills = st.slider("Time Management Skills Rating (1-5)", 1, 5, 3)
+    entrepreneurship_skills = st.slider("Entrepreneurship Skills Rating (1-5)", 1, 5, 3)
+    research_skills = st.slider("Research Skills Rating (1-5)", 1, 5, 3)
+    presentation_skills = st.slider("Presentation Skills Rating (1-5)", 1, 5, 3)
+    networking_skills = st.slider("Networking Skills Rating (1-5)", 1, 5, 3)
+    # NEWLY ADDED INPUTS FOR SKILLS/APPEARANCE
+    ability_to_present_ideas = st.slider("Ability to Present Ideas (1-5)", 1, 5, 3)
+    manner_of_speaking = st.slider("Manner of Speaking (1-5)", 1, 5, 3)
+    general_appearance = st.slider("General Appearance (1-5)", 1, 5, 3)
 
-        with col1:
-            gpa = st.number_input("GPA (0–4.0)", 0.0, 4.0, value=3.0, step=0.01)
-            soft_skills = st.slider("Soft Skills (0–100)", 0, 100, 75)
 
-        with col2:
-            internship = st.slider("Internship (0–100)", 0, 100, 80)
-            extracurricular = st.slider("Extracurricular (0–100)", 0, 100, 60)
+# NEW SECTION FOR GENDER (as it's a categorical feature)
+st.subheader("Demographic Details")
+gender = st.selectbox("Gender", options=[0, 1], format_func=lambda x: "Female" if x == 0 else "Male")
+# Assuming 0 for Female, 1 for Male based on typical encoding.
+# If your original data used different encoding (e.g., 1 for Female, 0 for Male, or string labels),
+# you MUST adjust this `format_func` and the `options` accordingly.
+# Check your notebook's data preprocessing for 'GENDER' if you're unsure.
 
-        with col3:
-            mock_interview = st.slider("Mock Interview (0–100)", 0, 100, 70)
 
-        submitted = st.form_submit_button("🔮 Predict")
+st.write("---") # Another horizontal line
 
-    # Prediction logic after submission
-    if submitted:
-        # Collect inputs & scale
-        input_data = np.array([[gpa, internship, mock_interview, soft_skills, extracurricular]])
-        input_scaled = scaler.transform(input_data)
+# --- Prediction Button and Logic ---
+# This block executes when the "Predict Employability" button is clicked.
+# It performs data preparation, scaling, prediction, and displays the results.
+if st.button("Predict Employability"):
+    # Create a Pandas DataFrame from the collected input values.
+    # The 'columns' argument ensures the feature names and order match 'expected_features'.
+    # ENSURE THE ORDER HERE MATCHES THE 'expected_features' LIST EXACTLY!
+    input_data = pd.DataFrame([[
+        cgpa, projects, internships, workshops, certifications, awards,
+        scholarships, extracurricular, aptitude_test_score, soft_skills, # aptitude_test_score moved
+        communication_skills, problem_solving_skills, leadership_skills,
+        teamwork_skills, critical_thinking_skills, adaptability_skills,
+        time_management_skills, entrepreneurship_skills, research_skills,
+        presentation_skills, networking_skills, student_performance_rating,
+        gender, # NEWLY ADDED
+        general_point_average, # NEWLY ADDED
+        general_appearance, # NEWLY ADDED
+        manner_of_speaking, # NEWLY ADDED
+        ability_to_present_ideas # NEWLY ADDED
+    ]], columns=expected_features)
 
-        # Model prediction
-        prediction = model.predict(input_scaled)[0]
-        confidence = abs(model.decision_function(input_scaled)[0])
+    # Scale the input data using the pre-fitted scaler.
+    # This step is crucial as the model expects scaled input.
+    # Includes error handling for potential issues during scaling.
+    try:
+        scaled_input = scaler.transform(input_data)
+    except Exception as e:
+        st.error(f"Error during scaling: {e}. This might happen if the number of input features does not match the scaler's expected features.")
+        st.stop()
 
-        # Result interpretation
-        result = "✅ Employable" if prediction == 1 else "⚠️ At Risk"
-        color = "green" if prediction == 1 else "red"
+    # Make the employability prediction (0 or 1).
+    prediction = model.predict(scaled_input)
+    # Get the probability scores for each class (Employable/Less Employable).
+    prediction_proba = model.predict_proba(scaled_input)
 
-        # Store results in session state for use in other tabs
-        st.session_state['data'] = {
-            "GPA": gpa,
-            "Internship": internship,
-            "Mock Interview": mock_interview,
-            "Soft Skills": soft_skills,
-            "Extracurricular": extracurricular
-        }
-        st.session_state['result'] = result
-        st.session_state['confidence'] = confidence
+    # Extract probabilities for better user feedback.
+    employable_proba = prediction_proba[0][1] # Probability of being Employable (CLASS=1)
+    less_employable_proba = prediction_proba[0][0] # Probability of being Less Employable (CLASS=0)
 
-        # Display results
-        st.markdown("---")
-        st.metric(label="Prediction", value=f"{result}", delta=f"Confidence: {confidence:.2f}")
-
-# ---------------- Tab 2: Feature Insights ----------------
-with tab2:
-    st.header("📊 Feature Contribution")
-
-    if 'data' in st.session_state:
-        df = pd.DataFrame([st.session_state['data']])
-        # Horizontal bar chart of features
-        df.T.plot(kind="barh", legend=False, figsize=(6, 3), color='skyblue')
-        plt.xlabel("Feature Value")
-        st.pyplot(plt.gcf())
-        plt.clf()
+    st.subheader("Prediction Result:")
+    # Display the prediction result with distinct styling based on the outcome.
+    if prediction[0] == 1:
+        st.markdown(f"""
+            <div class="prediction-box employable">
+                Employable! 🎉
+            </div>
+            <p style='text-align: center; margin-top: 1em; font-size: 1.1em;'>
+                Probability of being Employable: <strong>{employable_proba:.2%}</strong>
+            </p>
+            """, unsafe_allow_html=True)
+        st.balloons() # Fun animation for positive outcome
     else:
-        st.info("Please submit a prediction first on the 📋 Input Form tab.")
+        st.markdown(f"""
+            <div class="prediction-box less-employable">
+                Less Employable 🙁
+            </div>
+            <p style='text-align: center; margin-top: 1em; font-size: 1.1em;'>
+                Probability of being Less Employable: <strong>{less_employable_proba:.2%}</strong>
+            </p>
+            """, unsafe_allow_html=True)
+        st.warning("Consider focusing on skill development and academic performance to improve employability.")
 
-# ---------------- Tab 3: Report ----------------
-with tab3:
-    st.header("📄 Downloadable Prediction Report")
+st.write("---") # Another horizontal line
+# Informational message about the nature of the prediction.
+st.info("This prediction is based on a machine learning model and should be used as a guide. Actual employability depends on many factors.")
 
-    if 'result' in st.session_state:
-        pdf_path = generate_pdf_report(
-            st.session_state['data'],
-            st.session_state['result'],
-            st.session_state['confidence']
-        )
-        st.markdown(get_pdf_download_link(pdf_path), unsafe_allow_html=True)
+# --- Expander for "About This Predictor" ---
+# Provides additional details about the model and features, hidden by default.
+with st.expander("About This Predictor"):
+    st.write("""
+        This application uses a machine learning model (specifically, an SVM model)
+        trained on a dataset of student academic records and skill assessments to predict
+        their employability status (Employable or Less Employable).
 
-    else:
-        st.info("Please submit a prediction first on the 📋 Input Form tab.")
+        **Key Features Used for Prediction:**
+        - **Academic Performance:** CGPA, Student Performance Rating, General Point Average.
+        - **Experience & Achievements:** Projects, Internships, Workshops, Certifications, Awards, Scholarships, Extracurricular activities.
+        - **Skills:** Soft Skills, Aptitude Test Score, Communication, Problem Solving, Leadership, Teamwork, Critical Thinking, Adaptability, Time Management, Entrepreneurship, Research, Presentation, Networking Skills, Ability to Present Ideas, Manner of Speaking.
+        - **Demographics:** Gender, General Appearance.
 
-# --- Footer ---
-st.markdown("---")
-st.caption("© 2025 Your Name / Your University | Graduate Employability Prediction App | For research purposes only.")
+        The model was trained using a GridSearchCV approach to find the best hyperparameters
+        and SMOTE for handling class imbalance.
+    """)
+
+# --- Footer Information ---
+# Displays version, update, developer, and copyright information at the bottom of the page.
+st.markdown("""
+    <div class="footer-info">
+        Version 1.0 | Last updated: Aug-2025 | Developed by Mr.CHOONG MUH IN (TP068331)
+    </div>
+    """, unsafe_allow_html=True)
+st.caption("© 2025 CHOONG MUH IN / APU University | Graduate Employability Prediction App | For research purposes only.")
