@@ -90,11 +90,14 @@ with col2:
 
 input_df = pd.DataFrame([input_values], columns=feature_columns)
 
-st.markdown("---")
-
 if st.button("Predict Employability"):
     st.subheader("Prediction Results:")
+
+    # 🪄 Fix: reorder columns to match scaler’s expected order
+    input_df = input_df[scaler.feature_names_in_]
+
     scaled_input = scaler.transform(input_df)
+
     prediction = model.predict(scaled_input)
     prediction_proba = model.predict_proba(scaled_input)
 
