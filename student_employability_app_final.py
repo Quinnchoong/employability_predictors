@@ -10,6 +10,8 @@ Original file is located at
 # advanced_employability_app_final.py
 # File: streamlit_app.py
 
+# File: streamlit_app.py
+
 import streamlit as st
 import pandas as pd
 import joblib
@@ -22,7 +24,6 @@ st.set_page_config(page_title="Student Employability Predictor", layout="centere
 try:
     model = joblib.load('employability_predictor.pkl')
     scaler = joblib.load('scaler.pkl')
-    # Use the actual feature names from the training data
     feature_columns = [
         'GENDER', 'GENERAL_APPEARANCE', 'GENERAL_POINT_AVERAGE',
         'MANNER_OF_SPEAKING', 'PHYSICAL_CONDITION', 'MENTAL_ALERTNESS',
@@ -52,20 +53,20 @@ input_values = {}
 with col1:
     st.subheader("Attributes")
     input_values['GENDER'] = st.radio("Gender", [0,1], format_func=lambda x: "Male" if x==1 else "Female", index=1)
-    input_values['GENERAL_APPEARANCE'] = st.slider("General Appearance (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['GENERAL_APPEARANCE'] = st.slider("General Appearance (1-5)", 1, 5, 3, 1)
     input_values['GENERAL_POINT_AVERAGE'] = st.number_input("General Point Average (0.0-4.0)", 0.0, 4.0, 3.0, 0.01)
-    input_values['MANNER_OF_SPEAKING'] = st.slider("Manner of Speaking (1-5)", 1.0, 5.0, 3.0, 0.1)
-    input_values['PHYSICAL_CONDITION'] = st.slider("Physical Condition (1-5)", 1.0, 5.0, 3.0, 0.1)
-    input_values['MENTAL_ALERTNESS'] = st.slider("Mental Alertness (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['MANNER_OF_SPEAKING'] = st.slider("Manner of Speaking (1-5)", 1, 5, 3, 1)
+    input_values['PHYSICAL_CONDITION'] = st.slider("Physical Condition (1-5)", 1, 5, 3, 1)
+    input_values['MENTAL_ALERTNESS'] = st.slider("Mental Alertness (1-5)", 1, 5, 3, 1)
 
 with col2:
     st.subheader("Skills & Others")
-    input_values['SELF-CONFIDENCE'] = st.slider("Self-Confidence (1-5)", 1.0, 5.0, 3.0, 0.1)
-    input_values['ABILITY_TO_PRESENT_IDEAS'] = st.slider("Ability to Present Ideas (1-5)", 1.0, 5.0, 3.0, 0.1)
-    input_values['COMMUNICATION_SKILLS'] = st.slider("Communication Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
-    input_values['STUDENT_PERFORMANCE_RATING'] = st.slider("Student Performance Rating (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['SELF-CONFIDENCE'] = st.slider("Self-Confidence (1-5)", 1, 5, 3, 1)
+    input_values['ABILITY_TO_PRESENT_IDEAS'] = st.slider("Ability to Present Ideas (1-5)", 1, 5, 3, 1)
+    input_values['COMMUNICATION_SKILLS'] = st.slider("Communication Skills (1-5)", 1, 5, 3, 1)
+    input_values['STUDENT_PERFORMANCE_RATING'] = st.slider("Student Performance Rating (1-5)", 1, 5, 3, 1)
     input_values['NO_SKILLS'] = st.radio("Has No Skills", [0,1], format_func=lambda x: "No" if x==0 else "Yes", index=0)
-    input_values['Year_of_Graduate'] = st.number_input("Year of Graduate", 2000, 2030, 2024, 1)
+    input_values['Year_of_Graduate'] = st.number_input("Year of Graduate (2019–2022)", min_value=2019, max_value=2022, value=2022, step=1)
 
 input_df = pd.DataFrame([input_values])
 input_df = input_df[feature_columns]  # ensure correct column order
@@ -92,11 +93,8 @@ if st.button("Predict Employability"):
     """, unsafe_allow_html=True)
 
 st.markdown("---")
-st.caption("© 2025 CHOONG MUH IN / APU University | Graduate Employability Prediction App | For research purposes only.")
-
 
 # --- Footer Information ---
-# Displays version, update, developer, and copyright information at the bottom of the page.
 st.markdown("""
     <div class="footer-info">
         Version 1.0 | Last updated: Aug-2025 | Developed by Mr.CHOONG MUH IN (TP068331)
