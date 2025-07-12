@@ -8,7 +8,6 @@ Original file is located at
 """
 
 # advanced_employability_app_final.py
-
 # File: streamlit_app.py
 
 import streamlit as st
@@ -23,6 +22,13 @@ st.set_page_config(page_title="Student Employability Predictor", layout="centere
 try:
     model = joblib.load('employability_predictor.pkl')
     scaler = joblib.load('scaler.pkl')
+    # Use the actual feature names from the training data
+    feature_columns = [
+        'GENDER', 'GENERAL_APPEARANCE', 'GENERAL_POINT_AVERAGE',
+        'MANNER_OF_SPEAKING', 'PHYSICAL_CONDITION', 'MENTAL_ALERTNESS',
+        'SELF-CONFIDENCE', 'ABILITY_TO_PRESENT_IDEAS', 'COMMUNICATION_SKILLS',
+        'STUDENT_PERFORMANCE_RATING', 'NO_SKILLS', 'Year_of_Graduate'
+    ]
     st.success("Model and Scaler loaded successfully!")
 except FileNotFoundError:
     st.error("""
@@ -41,63 +47,34 @@ st.header("Enter Student Attributes")
 
 col1, col2 = st.columns(2)
 
-feature_columns = [
-    'STUDENT_PERFORMANCE_RATING', 'PROJECT_COMPLETION_RATE', 'INTERNSHIP_EXPERIENCE',
-    'COMMUNICATION_SKILLS', 'PROBLEM_SOLVING_SKILLS', 'TEAMWORK_SKILLS',
-    'LEADERSHIP_SKILLS', 'CRITICAL_THINKING_SKILLS', 'ADAPTABILITY',
-    'TIME_MANAGEMENT_SKILLS', 'GPA', 'EXTRACURRICULAR_ACTIVITIES',
-    'VOLUNTEERING_EXPERIENCE', 'CERTIFICATIONS', 'WORK_EXPERIENCE',
-    'CAREER_GOALS_ALIGNMENT', 'JOB_FAIR_ATTENDANCE', 'NETWORKING_EVENTS_ATTENDED',
-    'MOCK_INTERVIEW_PERFORMANCE', 'RESUME_STRENGTH', 'RECOMMENDATION_LETTERS',
-    'ONLINE_PRESENCE', 'SOFT_SKILLS_ASSESSMENT', 'TECHNICAL_SKILLS_ASSESSMENT',
-    'ATTENDANCE_RATE', 'PRACTICAL_SKILLS_SCORE', 'RESEARCH_PAPER_PUBLISHED',
-    'AWARDS_ACHIEVEMENTS', 'ENTREPRENEURIAL_INITIATIVES', 'GLOBAL_EXPOSURE'
-]
-
 input_values = {}
 
 with col1:
-    st.subheader("Academic & Core Skills")
-    input_values['STUDENT_PERFORMANCE_RATING'] = st.slider("Student Performance Rating (1-5)", 1.0, 5.0, 3.5, 0.1)
-    input_values['PROJECT_COMPLETION_RATE'] = st.slider("Project Completion Rate (%)", 0.0, 100.0, 85.0, 1.0)
-    input_values['GPA'] = st.number_input("GPA (0.0-4.0)", 0.0, 4.0, 3.2, 0.01)
-    input_values['ATTENDANCE_RATE'] = st.slider("Attendance Rate (%)", 0.0, 100.0, 92.0, 1.0)
-    input_values['PRACTICAL_SKILLS_SCORE'] = st.slider("Practical Skills Score (1-5)", 1.0, 5.0, 3.8, 0.1)
-    input_values['COMMUNICATION_SKILLS'] = st.slider("Communication Skills (1-5)", 1.0, 5.0, 4.0, 0.1)
-    input_values['PROBLEM_SOLVING_SKILLS'] = st.slider("Problem Solving Skills (1-5)", 1.0, 5.0, 4.2, 0.1)
-    input_values['CRITICAL_THINKING_SKILLS'] = st.slider("Critical Thinking Skills (1-5)", 1.0, 5.0, 4.1, 0.1)
-    input_values['ADAPTABILITY'] = st.slider("Adaptability (1-5)", 1.0, 5.0, 3.9, 0.1)
-    input_values['TIME_MANAGEMENT_SKILLS'] = st.slider("Time Management Skills (1-5)", 1.0, 5.0, 3.7, 0.1)
+    st.subheader("Attributes")
+    input_values['GENDER'] = st.radio("Gender", [0,1], format_func=lambda x: "Male" if x==1 else "Female", index=1)
+    input_values['GENERAL_APPEARANCE'] = st.slider("General Appearance (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['GENERAL_POINT_AVERAGE'] = st.number_input("General Point Average (0.0-4.0)", 0.0, 4.0, 3.0, 0.01)
+    input_values['MANNER_OF_SPEAKING'] = st.slider("Manner of Speaking (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['PHYSICAL_CONDITION'] = st.slider("Physical Condition (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['MENTAL_ALERTNESS'] = st.slider("Mental Alertness (1-5)", 1.0, 5.0, 3.0, 0.1)
 
 with col2:
-    st.subheader("Experience & Professional Development")
-    for name, default in [
-        ('INTERNSHIP_EXPERIENCE', 1), ('EXTRACURRICULAR_ACTIVITIES',1), ('VOLUNTEERING_EXPERIENCE',0),
-        ('CERTIFICATIONS',1), ('WORK_EXPERIENCE',0), ('JOB_FAIR_ATTENDANCE',1), ('NETWORKING_EVENTS_ATTENDED',0),
-        ('RESEARCH_PAPER_PUBLISHED',0), ('AWARDS_ACHIEVEMENTS',1), ('ENTREPRENEURIAL_INITIATIVES',0), ('GLOBAL_EXPOSURE',0),
-        ('RECOMMENDATION_LETTERS',1)
-    ]:
-        input_values[name] = st.radio(name.replace('_',' ').title(), [0,1], format_func=lambda x: "Yes" if x==1 else "No", index=default)
+    st.subheader("Skills & Others")
+    input_values['SELF-CONFIDENCE'] = st.slider("Self-Confidence (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['ABILITY_TO_PRESENT_IDEAS'] = st.slider("Ability to Present Ideas (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['COMMUNICATION_SKILLS'] = st.slider("Communication Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['STUDENT_PERFORMANCE_RATING'] = st.slider("Student Performance Rating (1-5)", 1.0, 5.0, 3.0, 0.1)
+    input_values['NO_SKILLS'] = st.radio("Has No Skills", [0,1], format_func=lambda x: "No" if x==0 else "Yes", index=0)
+    input_values['Year_of_Graduate'] = st.number_input("Year of Graduate", 2000, 2030, 2024, 1)
 
-    input_values['CAREER_GOALS_ALIGNMENT'] = st.slider("Career Goals Alignment (1-5)", 1.0, 5.0, 4.0, 0.1)
-    input_values['MOCK_INTERVIEW_PERFORMANCE'] = st.slider("Mock Interview Performance (1-5)", 1.0, 5.0, 3.5, 0.1)
-    input_values['RESUME_STRENGTH'] = st.slider("Resume Strength (1-5)", 1.0, 5.0, 4.0, 0.1)
-    input_values['ONLINE_PRESENCE'] = st.slider("Online Presence (1-5)", 1.0, 5.0, 3.0, 0.1)
-    input_values['SOFT_SKILLS_ASSESSMENT'] = st.slider("Soft Skills Assessment (1-5)", 1.0, 5.0, 3.9, 0.1)
-    input_values['TECHNICAL_SKILLS_ASSESSMENT'] = st.slider("Technical Skills Assessment (1-5)", 1.0, 5.0, 4.1, 0.1)
-    input_values['TEAMWORK_SKILLS'] = st.slider("Teamwork Skills (1-5)", 1.0, 5.0, 4.0, 0.1)
-    input_values['LEADERSHIP_SKILLS'] = st.slider("Leadership Skills (1-5)", 1.0, 5.0, 3.5, 0.1)
+input_df = pd.DataFrame([input_values])
+input_df = input_df[feature_columns]  # ensure correct column order
 
-input_df = pd.DataFrame([input_values], columns=feature_columns)
+st.markdown("---")
 
 if st.button("Predict Employability"):
     st.subheader("Prediction Results:")
-
-    # 🪄 Fix: reorder columns to match scaler’s expected order
-    input_df = input_df[scaler.feature_names_in_]
-
     scaled_input = scaler.transform(input_df)
-
     prediction = model.predict(scaled_input)
     prediction_proba = model.predict_proba(scaled_input)
 
@@ -115,6 +92,7 @@ if st.button("Predict Employability"):
     """, unsafe_allow_html=True)
 
 st.markdown("---")
+st.caption("© 2025 CHOONG MUH IN / APU University | Graduate Employability Prediction App | For research purposes only.")
 
 
 # --- Footer Information ---
