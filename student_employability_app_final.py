@@ -10,159 +10,38 @@ Original file is located at
 # advanced_employability_app_final.py
 
 import streamlit as st
-import pandas as pd
-import joblib
 import numpy as np
+import joblib
 
-# Load the trained model and scaler
-# Ensure these files are in the same directory as your streamlit_app.py or accessible via a defined path
-try:
-    model = joblib.load('employability_predictor.pkl')
-    scaler = joblib.load('scaler.pkl')
-except FileNotFoundError:
-    st.error("Model or scaler file not found. Please ensure 'employability_predictor.pkl' and 'scaler.pkl' are in the correct directory.")
-    st.stop() # Stop the app if essential files are missing
+# Load model & scaler
+model = joblib.load("employability_predictor.pkl")
+scaler = joblib.load("scaler.pkl")
 
-st.set_page_config(page_title="Student Employability Predictor", layout="centered")
+st.set_page_config(page_title="🎓 Employability Predictor", layout="centered")
+st.title("🎓 Student Employability Predictor")
+st.write("Predict whether a student is **Employable** or **Less Employable** based on their profile.")
 
-st.title("🎓 Student Employability Prediction")
-st.markdown("""
-    This application predicts the employability of a student based on various academic and personal attributes.
-    Please enter the student's details below to get a prediction.
-""")
+# 🔷 Replace with actual feature names
+feature_names = [
+    "Feature_1", "Feature_2", "Feature_3", "Feature_4", "Feature_5"
+]
 
-# --- Input Features ---
-st.header("Student Information")
+# User inputs
+inputs = []
+for feature in feature_names:
+    val = st.number_input(f"Enter {feature}:", value=0.0)
+    inputs.append(val)
 
-# Define input fields based on the features used in your model (X.columns.tolist())
-# You need to ensure the order and names of these features match your training data.
-# Based on the provided notebook, the features are:
-# 'STUDENT_PERFORMANCE_RATING', 'PROJECT_COMPLETION_RATE', 'INTERNSHIP_EXPERIENCE',
-# 'COMMUNICATION_SKILLS', 'PROBLEM_SOLVING_SKILLS', 'TEAMWORK_SKILLS',
-# 'LEADERSHIP_SKILLS', 'CRITICAL_THINKING_SKILLS', 'ADAPTABILITY',
-# 'TIME_MANAGEMENT_SKILLS', 'GPA', 'EXTRACURRICULAR_ACTIVITIES',
-# 'VOLUNTEERING_EXPERIENCE', 'CERTIFICATIONS', 'WORK_EXPERIENCE',
-# 'CAREER_GOALS_ALIGNMENT', 'JOB_FAIR_ATTENDANCE', 'NETWORKING_EVENTS_ATTENDED',
-# 'MOCK_INTERVIEW_PERFORMANCE', 'RESUME_STRENGTH', 'RECOMMENDATION_LETTERS',
-# 'ONLINE_PRESENCE', 'SOFT_SKILLS_ASSESSMENT', 'TECHNICAL_SKILLS_ASSESSMENT',
-# 'ATTENDANCE_RATE', 'PRACTICAL_SKILLS_SCORE', 'RESEARCH_PAPER_PUBLISHED',
-# 'AWARDS_ACHIEVEMENTS', 'ENTREPRENEURIAL_INITIATIVES', 'GLOBAL_EXPOSURE'
+if st.button("Predict"):
+    X = np.array(inputs).reshape(1, -1)
+    X_scaled = scaler.transform(X)
+    pred = model.predict(X_scaled)[0]
+    prob = model.predict_proba(X_scaled)[0][pred]
 
-# Example input fields (adjust based on your actual features and their ranges)
-# For simplicity, I'll use a few examples. You'll need to add all 30 features.
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Academic & Project Details")
-    student_performance_rating = st.slider("Student Performance Rating (1-5)", 1.0, 5.0, 3.0, 0.1)
-    project_completion_rate = st.slider("Project Completion Rate (%)", 0.0, 100.0, 75.0, 1.0)
-    gpa = st.number_input("GPA (0.0-4.0)", min_value=0.0, max_value=4.0, value=3.0, step=0.01)
-    internship_experience = st.radio("Internship Experience", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    attendance_rate = st.slider("Attendance Rate (%)", 0.0, 100.0, 90.0, 1.0)
-    practical_skills_score = st.slider("Practical Skills Score (1-5)", 1.0, 5.0, 3.0, 0.1)
-    research_paper_published = st.radio("Research Paper Published", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    awards_achievements = st.radio("Awards/Achievements", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    entrepreneurial_initiatives = st.radio("Entrepreneurial Initiatives", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    global_exposure = st.radio("Global Exposure", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-
-
-with col2:
-    st.subheader("Skills & Other Attributes")
-    communication_skills = st.slider("Communication Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
-    problem_solving_skills = st.slider("Problem Solving Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
-    teamwork_skills = st.slider("Teamwork Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
-    leadership_skills = st.slider("Leadership Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
-    critical_thinking_skills = st.slider("Critical Thinking Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
-    adaptability = st.slider("Adaptability (1-5)", 1.0, 5.0, 3.0, 0.1)
-    time_management_skills = st.slider("Time Management Skills (1-5)", 1.0, 5.0, 3.0, 0.1)
-    extracurricular_activities = st.radio("Extracurricular Activities", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    volunteering_experience = st.radio("Volunteering Experience", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    certifications = st.radio("Certifications", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    work_experience = st.radio("Work Experience", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    career_goals_alignment = st.slider("Career Goals Alignment (1-5)", 1.0, 5.0, 3.0, 0.1)
-    job_fair_attendance = st.radio("Job Fair Attendance", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    networking_events_attended = st.radio("Networking Events Attended", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    mock_interview_performance = st.slider("Mock Interview Performance (1-5)", 1.0, 5.0, 3.0, 0.1)
-    resume_strength = st.slider("Resume Strength (1-5)", 1.0, 5.0, 3.0, 0.1)
-    recommendation_letters = st.radio("Recommendation Letters", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
-    online_presence = st.slider("Online Presence (1-5)", 1.0, 5.0, 3.0, 0.1)
-    soft_skills_assessment = st.slider("Soft Skills Assessment (1-5)", 1.0, 5.0, 3.0, 0.1)
-    technical_skills_assessment = st.slider("Technical Skills Assessment (1-5)", 1.0, 5.0, 3.0, 0.1)
-
-
-# Create a DataFrame from the inputs, ensuring column order matches training data
-# IMPORTANT: The order of columns in this DataFrame MUST match the order of features
-# that your model was trained on. You can get this order from X.columns.tolist()
-# after dropping 'CLASS' in your notebook.
-input_data = pd.DataFrame([[
-    student_performance_rating,
-    project_completion_rate,
-    internship_experience,
-    communication_skills,
-    problem_solving_skills,
-    teamwork_skills,
-    leadership_skills,
-    critical_thinking_skills,
-    adaptability,
-    time_management_skills,
-    gpa,
-    extracurricular_activities,
-    volunteering_experience,
-    certifications,
-    work_experience,
-    career_goals_alignment,
-    job_fair_attendance,
-    networking_events_attended,
-    mock_interview_performance,
-    resume_strength,
-    recommendation_letters,
-    online_presence,
-    soft_skills_assessment,
-    technical_skills_assessment,
-    attendance_rate,
-    practical_skills_score,
-    research_paper_published,
-    awards_achievements,
-    entrepreneurial_initiatives,
-    global_exposure
-]], columns=[
-    'STUDENT_PERFORMANCE_RATING', 'PROJECT_COMPLETION_RATE', 'INTERNSHIP_EXPERIENCE',
-    'COMMUNICATION_SKILLS', 'PROBLEM_SOLVING_SKILLS', 'TEAMWORK_SKILLS',
-    'LEADERSHIP_SKILLS', 'CRITICAL_THINKING_SKILLS', 'ADAPTABILITY',
-    'TIME_MANAGEMENT_SKILLS', 'GPA', 'EXTRACURRICULAR_ACTIVITIES',
-    'VOLUNTEERING_EXPERIENCE', 'CERTIFICATIONS', 'WORK_EXPERIENCE',
-    'CAREER_GOALS_ALIGNMENT', 'JOB_FAIR_ATTENDANCE', 'NETWORKING_EVENTS_ATTENDED',
-    'MOCK_INTERVIEW_PERFORMANCE', 'RESUME_STRENGTH', 'RECOMMENDATION_LETTERS',
-    'ONLINE_PRESENCE', 'SOFT_SKILLS_ASSESSMENT', 'TECHNICAL_SKILLS_ASSESSMENT',
-    'ATTENDANCE_RATE', 'PRACTICAL_SKILLS_SCORE', 'RESEARCH_PAPER_PUBLISHED',
-    'AWARDS_ACHIEVEMENTS', 'ENTREPRENEURIAL_INITIATIVES', 'GLOBAL_EXPOSURE'
-])
-
-# --- Prediction ---
-if st.button("Predict Employability"):
-    # Scale the input data using the loaded scaler
-    # Ensure the scaler was trained on the same features and in the same order
-    scaled_input = scaler.transform(input_data)
-
-    # Make prediction
-    prediction = model.predict(scaled_input)
-    prediction_proba = model.predict_proba(scaled_input)
-
-    st.subheader("Prediction Result")
-    if prediction[0] == 1:
-        st.success(f"The student is predicted to be **Employable**!")
-        st.balloons()
+    if pred == 1:
+        st.success(f"✅ Employable! (Confidence: {prob:.2f})")
     else:
-        st.warning(f"The student is predicted to be **Less Employable**.")
-
-    st.markdown(f"**Probability of being Employable:** {prediction_proba[0][1]*100:.2f}%")
-    st.markdown(f"**Probability of being Less Employable:** {prediction_proba[0][0]*100:.2f}%")
-
-    st.info("Disclaimer: This prediction is based on the trained model and provided inputs. It should be used as a guide and not as a definitive statement.")
-
-st.markdown("---")
-st.markdown("Developed by Your Name/Team Name")
+        st.warning(f"⚠️ Less Employable (Confidence: {prob:.2f})")
 
 
 # --- Footer Information ---
