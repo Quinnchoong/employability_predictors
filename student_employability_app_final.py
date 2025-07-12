@@ -8,125 +8,119 @@ Original file is located at
 """
 
 # advanced_employability_app_final.py
-# File: streamlit_app.py
-
 import streamlit as st
 import pandas as pd
-import joblib
 import numpy as np
+import joblib
 import matplotlib.pyplot as plt
 
-# --- Configuration ---
+# --- CONFIGURATION ---
 st.set_page_config(page_title="Student Employability Predictor", layout="centered")
 
-# --- Load Model and Scaler ---
-try:
-    model = joblib.load('employability_predictor.pkl')
-    scaler = joblib.load('scaler.pkl')
-    feature_columns = [
-        'GENDER', 'GENERAL_APPEARANCE', 'GENERAL_POINT_AVERAGE',
-        'MANNER_OF_SPEAKING', 'PHYSICAL_CONDITION', 'MENTAL_ALERTNESS',
-        'SELF-CONFIDENCE', 'ABILITY_TO_PRESENT_IDEAS', 'COMMUNICATION_SKILLS',
-        'STUDENT_PERFORMANCE_RATING', 'NO_SKILLS', 'Year_of_Graduate'
-    ]
-    st.success("Model and Scaler loaded successfully!")
-except FileNotFoundError:
-    st.error("""
-        Error: Model or scaler file not found.
-        Please ensure 'employability_predictor.pkl' and 'scaler.pkl' are in the same directory.
-    """)
+# --- LOAD MODEL & SCALER ---
+@st.cache_resource
+def load_model():
+    try:
+        model = joblib.load('employability_predictor.pkl')
+        scaler = joblib.load('scaler.pkl')
+        return model, scaler
+    except FileNotFoundError:
+        return None, None
+
+model, scaler = load_model()
+
+feature_columns = [
+    'GENDER', 'GENERAL_APPEARANCE', 'GENERAL_POINT_AVERAGE',
+    'MANNER_OF_SPEAKING', 'PHYSICAL_CONDITION', 'MENTAL_ALERTNESS',
+    'SELF-CONFIDENCE', 'ABILITY_TO_PRESENT_IDEAS', 'COMMUNICATION_SKILLS',
+    'STUDENT_PERFORMANCE_RATING', 'NO_SKILLS', 'Year_of_Graduate'
+]
+
+if model is None or scaler is None:
+    st.error("⚠️ Model or scaler file not found. Please ensure both files exist in the app directory.")
     st.stop()
 
+# --- TITLE & DESCRIPTION ---
 st.title("🎓 Student Employability Prediction App — SVM Model")
 st.markdown("""
-    The best model created — **Support Vector Machine (SVM)** — was applied to the employment prediction system. Adjust the sliders and options below to test different scenarios.
+The best model created — **Support Vector Machine (SVM)** — is deployed here for predicting employability. Adjust the inputs below and click Predict!
 """)
 st.markdown("---")
 
-st.header("Enter Student Attributes")
+# --- INPUT FORM ---
+def get_user_input():
+    col1, col2 = st.columns(2)
+    inputs = {}
 
-col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Attributes")
+        inputs['GENDER'] = st.radio("Gender", [0, 1], format_func=lambda x: "Male" if x==1 else "Female", index=1)
+        inputs['GENERAL_APPEARANCE'] = st.slider("General Appearance (1-5)", 1, 5, 3)
+        inputs['GENERAL_POINT_AVERAGE'] = st.number_input("GPA (0.0-4.0)", 0.0, 4.0, 3.0, 0.01)
+        inputs['MANNER_OF_SPEAKING'] = st.slider("Manner of Speaking (1-5)", 1, 5, 3)
+        inputs['PHYSICAL_CONDITION'] = st.slider("Physical Condition (1-5)", 1, 5, 3)
+        inputs['MENTAL_ALERTNESS'] = st.slider("Mental Alertness (1-5)", 1, 5, 3)
 
-input_values = {}
+    with col2:
+        st.subheader("Skills & Others")
+        inputs['SELF-CONFIDENCE'] = st.slider("Self-Confidence (1-5)", 1, 5, 3)
+        inputs['ABILITY_TO_PRESENT_IDEAS'] = st.slider("Presenting Ideas (1-5)", 1, 5, 3)
+        inputs['COMMUNICATION_SKILLS'] = st.slider("Communication Skills (1-5)", 1, 5, 3)
+        inputs['STUDENT_PERFORMANCE_RATING'] = st.slider("Performance Rating (1-5)", 1, 5, 3)
+        inputs['NO_SKILLS'] = st.radio("Has No Skills", [0, 1], format_func=lambda x: "No" if x==0 else "Yes", index=0)
+        inputs['Year_of_Graduate'] = st.number_input("Year of Graduate (2019–2022)", 2019, 2022, 2022)
 
-with col1:
-    st.subheader("Attributes")
-    input_values['GENDER'] = st.radio("Gender", [0,1], format_func=lambda x: "Male" if x==1 else "Female", index=1)
-    input_values['GENERAL_APPEARANCE'] = st.slider("General Appearance (1-5)", 1, 5, 3, 1)
-    input_values['GENERAL_POINT_AVERAGE'] = st.number_input("General Point Average (0.0-4.0)", 0.0, 4.0, 3.0, 0.01)
-    input_values['MANNER_OF_SPEAKING'] = st.slider("Manner of Speaking (1-5)", 1, 5, 3, 1)
-    input_values['PHYSICAL_CONDITION'] = st.slider("Physical Condition (1-5)", 1, 5, 3, 1)
-    input_values['MENTAL_ALERTNESS'] = st.slider("Mental Alertness (1-5)", 1, 5, 3, 1)
+    return pd.DataFrame([inputs])[feature_columns]
 
-with col2:
-    st.subheader("Skills & Others")
-    input_values['SELF-CONFIDENCE'] = st.slider("Self-Confidence (1-5)", 1, 5, 3, 1)
-    input_values['ABILITY_TO_PRESENT_IDEAS'] = st.slider("Ability to Present Ideas (1-5)", 1, 5, 3, 1)
-    input_values['COMMUNICATION_SKILLS'] = st.slider("Communication Skills (1-5)", 1, 5, 3, 1)
-    input_values['STUDENT_PERFORMANCE_RATING'] = st.slider("Student Performance Rating (1-5)", 1, 5, 3, 1)
-    input_values['NO_SKILLS'] = st.radio("Has No Skills", [0,1], format_func=lambda x: "No" if x==0 else "Yes", index=0)
-    input_values['Year_of_Graduate'] = st.number_input("Year of Graduate (2019–2022)", min_value=2019, max_value=2022, value=2022, step=1)
-
-input_df = pd.DataFrame([input_values])
-input_df = input_df[feature_columns]  # ensure correct column order
-
-st.markdown("---")
-
-if st.button("Predict Employability"):
-    st.subheader("Prediction Results:")
-
+# --- PREDICT FUNCTION ---
+def predict_employability(model, scaler, input_df):
     scaled_input = scaler.transform(input_df)
     prediction = model.predict(scaled_input)
-    prediction_proba = model.predict_proba(scaled_input)
+    prediction_proba = model.predict_proba(scaled_input)[0]
+    return prediction[0], prediction_proba
 
-    st.write("Input Data:")
-    st.write(input_df)
-
-    if prediction[0] == 1:
+# --- DISPLAY RESULTS ---
+def show_results(pred, proba, input_df):
+    if pred == 1:
         st.success("🎉 The student is predicted to be **Employable**!")
         st.balloons()
     else:
         st.warning("⚠️ The student is predicted to be **Less Employable**.")
 
-    st.info(f"**Probability of being Employable:** {prediction_proba[0][1]*100:.2f}%")
-    st.info(f"**Probability of being Less Employable:** {prediction_proba[0][0]*100:.2f}%")
+    st.info(f"Probability of being Employable: {proba[1]*100:.2f}%")
+    st.info(f"Probability of being Less Employable: {proba[0]*100:.2f}%")
 
-    if prediction_proba[0][1] < 50:
-        st.markdown("> ℹ️ Note: The model seems to favor predicting 'Less Employable' — consider checking your training data balance and whether SMOTE was applied properly.")
-
-    # --- Bar Chart of Probabilities ---
     fig, ax = plt.subplots()
-    ax.bar(['Less Employable', 'Employable'], prediction_proba[0]*100, color=['red', 'green'])
+    ax.bar(['Less Employable', 'Employable'], proba*100, color=['red', 'green'])
     ax.set_ylabel('Probability (%)')
-    ax.set_ylim(0,100)
+    ax.set_ylim(0, 100)
     ax.set_title('Prediction Probabilities')
     st.pyplot(fig)
 
-    # --- Append prediction log ---
-    log = pd.DataFrame({
-        'Employable (%)': [prediction_proba[0][1]*100],
-        'Less Employable (%)': [prediction_proba[0][0]*100]
-    })
     if 'prediction_log' not in st.session_state:
-        st.session_state['prediction_log'] = log
-    else:
-        st.session_state['prediction_log'] = pd.concat([st.session_state['prediction_log'], log], ignore_index=True)
+        st.session_state['prediction_log'] = pd.DataFrame(columns=['Employable (%)', 'Less Employable (%)'])
 
-    st.markdown("---")
+    st.session_state['prediction_log'] = pd.concat([
+        st.session_state['prediction_log'],
+        pd.DataFrame({'Employable (%)': [proba[1]*100], 'Less Employable (%)': [proba[0]*100]})
+    ], ignore_index=True)
+
     st.subheader("Prediction Log")
     st.dataframe(st.session_state['prediction_log'])
 
-    st.markdown("""
-        <small><i>Disclaimer: This prediction is based on the best SVM model trained and the attributes you provided. Use as guidance only.</i></small>
-    """, unsafe_allow_html=True)
+    csv = st.session_state['prediction_log'].to_csv(index=False).encode('utf-8')
+    st.download_button("Download Prediction Log", data=csv, file_name='prediction_log.csv', mime='text/csv')
+
+# --- MAIN ---
+input_df = get_user_input()
+
+if st.button("Predict Employability"):
+    if not all(col in input_df.columns for col in feature_columns):
+        st.error("Input columns mismatch. Please check your feature names and order.")
+    else:
+        pred, proba = predict_employability(model, scaler, input_df)
+        show_results(pred, proba, input_df)
 
 st.markdown("---")
-
-# --- Footer Information ---
-st.markdown("""
-    <div class="footer-info">
-        Version 1.0 | Last updated: Aug-2025 | Developed by Mr.CHOONG MUH IN (TP068331)
-    </div>
-    """, unsafe_allow_html=True)
-st.caption("© 2025 CHOONG MUH IN / APU University | Graduate Employability Prediction App | Powered by SVM Model | For research purposes only.")
+st.caption("© 2025 CHOONG MUH IN | Graduate Employability Prediction App | Powered by SVM | For research purposes only.")
 
