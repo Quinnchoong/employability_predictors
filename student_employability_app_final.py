@@ -115,61 +115,7 @@ if st.button("Predict Employability"):
     """, unsafe_allow_html=True)
 
 st.markdown("---")
-st.caption("© 2025 CHOONG MUH IN / APU University | Graduate Employability Prediction App | For research purposes only.")
 
-
-# File: requirements.txt
-"""
-streamlit>=1.33
-joblib>=1.4
-pandas>=2.2
-numpy>=1.26
-scikit-learn>=1.4
-"""
-
-# File: .gitignore
-"""
-__pycache__/
-*.pyc
-*.pkl
-*.joblib
-*.pdf
-.ipynb_checkpoints/
-.env
-*.env
-.vscode/
-.idea/
-"""
-
-# File: README.md
-"""
-# 🎓 Student Employability Predictor
-
-Interactive Streamlit app to predict employability based on 30+ attributes.
-
-## 🚀 How to Run
-
-### Local
-```bash
-pip install -r requirements.txt
-streamlit run streamlit_app.py
-```
-
-### Streamlit Cloud
-✅ Push to GitHub with `streamlit_app.py`, `employability_predictor.pkl`, `scaler.pkl`  
-✅ Deploy on https://streamlit.io/cloud
-
-## 📂 Files
-- `streamlit_app.py` → main app
-- `employability_predictor.pkl` → trained model
-- `scaler.pkl` → data scaler
-- `requirements.txt` → dependencies
-- `.gitignore` → recommended ignores
-- `README.md` → this file
-
----
-© 2025 CHOONG MUH IN / APU University
-"""
 
 # --- Footer Information ---
 # Displays version, update, developer, and copyright information at the bottom of the page.
