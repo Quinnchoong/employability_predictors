@@ -10,8 +10,6 @@ Original file is located at
 # advanced_employability_app_final.py
 # File: streamlit_app.py
 
-# File: streamlit_app.py
-
 import streamlit as st
 import pandas as pd
 import joblib
@@ -75,9 +73,13 @@ st.markdown("---")
 
 if st.button("Predict Employability"):
     st.subheader("Prediction Results:")
+
     scaled_input = scaler.transform(input_df)
     prediction = model.predict(scaled_input)
     prediction_proba = model.predict_proba(scaled_input)
+
+    st.write("Input Data:")
+    st.write(input_df)
 
     if prediction[0] == 1:
         st.success("🎉 The student is predicted to be **Employable**!")
@@ -87,6 +89,9 @@ if st.button("Predict Employability"):
 
     st.info(f"**Probability of being Employable:** {prediction_proba[0][1]*100:.2f}%")
     st.info(f"**Probability of being Less Employable:** {prediction_proba[0][0]*100:.2f}%")
+
+    if prediction_proba[0][1] < 50:
+        st.markdown("> ℹ️ Note: The model seems to favor predicting 'Less Employable' — consider checking your training data balance and whether SMOTE was applied properly.")
 
     st.markdown("""
         <small><i>Disclaimer: This prediction is based on the trained machine learning model and the attributes you provided. Use as guidance only.</i></small>
