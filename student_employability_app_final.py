@@ -35,9 +35,6 @@ st.markdown(
 image = Image.open("group-business-people-silhouette-businesspeople-abstract-background_656098-461.avif")
 st.image(image, use_column_width=True)
 
-# Title
-st.title("🎓 Student Employability Predictor")
-
 # --- LOAD MODEL & SCALER ---
 @st.cache_resource
 def load_model():
