@@ -14,39 +14,58 @@ import numpy as np
 import joblib
 from PIL import Image
 import base64
+from io import BytesIO
 
+# 📋 CONFIG
+st.set_page_config(page_title="🎓 Student Employability Predictor", layout="centered")
 
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Student Employability Predictor", layout="centered")
+# 📋 CSS for background, card, compact layout
+st.markdown("""
+<style>
+.stApp {
+    background-color: #e6f2ff;
+}
+html, body, [class*="css"] {
+    font-size: 14px;
+}
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+.card {
+    background-color: #f7f7f7;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+</style>
+""", unsafe_allow_html=True)
 
-# Add custom background color
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-color: #e6f2ff;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# Add header image
-image = Image.open("group-business-people-silhouette-businesspeople-abstract-background_656098-461.avif")
-st.image(image, use_container_width=True)
-
-
-# --- LOAD MODEL & SCALER ---
+# 📋 Load Model & Scaler
 @st.cache_resource
 def load_model():
     try:
-        model = joblib.load('employability_predictor.pkl')
-        scaler = joblib.load('scaler.pkl')
+        model = joblib.load("employability_predictor.pkl")
+        scaler = joblib.load("scaler.pkl")
         return model, scaler
     except FileNotFoundError:
         return None, None
 
 model, scaler = load_model()
+
+if model is None or scaler is None:
+    st.error("⚠️ Model or scaler file not found.")
+    st.stop()
+
+# 📋 Load & show header image
+image = Image.open("group-business-people-silhouette-businesspeople-abstract-background_656098-461.avif")
+st.image(image, use_container_width=True)
+
+st.markdown("<h2 style='text-align: center;'>🎓 Student Employability Predictor — SVM Model</h2>", unsafe_allow_html=True)
+
+st.markdown("""
+Fill in the input features to predict employability.
+""")
 
 feature_columns = [
     'GENDER', 'GENERAL_APPEARANCE', 'GENERAL_POINT_AVERAGE',
@@ -55,51 +74,40 @@ feature_columns = [
     'STUDENT_PERFORMANCE_RATING', 'NO_SKILLS', 'Year_of_Graduate'
 ]
 
-if model is None or scaler is None:
-    st.error("⚠️ Model or scaler file not found. Please ensure both files exist in the app directory.")
-    st.stop()
-
-# --- TITLE & DESCRIPTION ---
-st.title("🎓 Student Employability Prediction App — SVM Model")
-st.markdown("""
-The best model created — **Support Vector Machine (SVM)** — is deployed here for predicting employability. Adjust the inputs below and click Predict!
-""")
-st.markdown("---")
-
-# --- INPUT FORM ---
-def get_user_input():
-    col1, col2 = st.columns(2)
-    inputs = {}
-
-    with col1:
-        st.subheader("Attributes")
-        inputs['GENDER'] = st.radio("Gender", [0, 1], format_func=lambda x: "Male" if x==1 else "Female", index=1)
-        inputs['GENERAL_APPEARANCE'] = st.slider("General Appearance (1-5)", 1, 5, 3)
-        inputs['GENERAL_POINT_AVERAGE'] = st.number_input("GPA (0.0-4.0)", 0.0, 4.0, 3.0, 0.01)
-        inputs['MANNER_OF_SPEAKING'] = st.slider("Manner of Speaking (1-5)", 1, 5, 3)
-        inputs['PHYSICAL_CONDITION'] = st.slider("Physical Condition (1-5)", 1, 5, 3)
-        inputs['MENTAL_ALERTNESS'] = st.slider("Mental Alertness (1-5)", 1, 5, 3)
-
-    with col2:
-        st.subheader("Skills & Others")
-        inputs['SELF-CONFIDENCE'] = st.slider("Self-Confidence (1-5)", 1, 5, 3)
-        inputs['ABILITY_TO_PRESENT_IDEAS'] = st.slider("Presenting Ideas (1-5)", 1, 5, 3)
-        inputs['COMMUNICATION_SKILLS'] = st.slider("Communication Skills (1-5)", 1, 5, 3)
-        inputs['STUDENT_PERFORMANCE_RATING'] = st.slider("Performance Rating (1-5)", 1, 5, 3)
-        inputs['NO_SKILLS'] = st.radio("Has No Skills", [0, 1], format_func=lambda x: "No" if x==0 else "Yes", index=0)
-        inputs['Year_of_Graduate'] = st.number_input("Year of Graduate (2019–2022)", 2019, 2022, 2022)
-
-    return pd.DataFrame([inputs])[feature_columns]
-
-# --- PREDICT FUNCTION ---
 def predict_employability(model, scaler, input_df):
     scaled_input = scaler.transform(input_df)
     prediction = model.predict(scaled_input)
     prediction_proba = model.predict_proba(scaled_input)[0]
     return prediction[0], prediction_proba
 
-# --- DISPLAY RESULTS ---
-def show_results(pred, proba, input_df):
+# 📋 Card container
+st.markdown('<div class="card">', unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns(3)
+inputs = {}
+
+with col1:
+    inputs['GENDER'] = st.radio("Gender", [0, 1], format_func=lambda x: "Male" if x==1 else "Female", index=1)
+    inputs['GENERAL_APPEARANCE'] = st.slider("Appearance (1-5)", 1, 5, 3)
+    inputs['GENERAL_POINT_AVERAGE'] = st.number_input("GPA (0.0-4.0)", 0.0, 4.0, 3.0, 0.01)
+    inputs['MANNER_OF_SPEAKING'] = st.slider("Speaking (1-5)", 1, 5, 3)
+
+with col2:
+    inputs['PHYSICAL_CONDITION'] = st.slider("Physical (1-5)", 1, 5, 3)
+    inputs['MENTAL_ALERTNESS'] = st.slider("Alertness (1-5)", 1, 5, 3)
+    inputs['SELF-CONFIDENCE'] = st.slider("Confidence (1-5)", 1, 5, 3)
+    inputs['ABILITY_TO_PRESENT_IDEAS'] = st.slider("Ideas (1-5)", 1, 5, 3)
+
+with col3:
+    inputs['COMMUNICATION_SKILLS'] = st.slider("Communication (1-5)", 1, 5, 3)
+    inputs['STUDENT_PERFORMANCE_RATING'] = st.slider("Performance (1-5)", 1, 5, 3)
+    inputs['NO_SKILLS'] = st.radio("Has No Skills", [0,1], format_func=lambda x: "No" if x==0 else "Yes", index=0)
+    inputs['Year_of_Graduate'] = st.number_input("Graduation Year", 2019, 2022, 2022)
+
+input_df = pd.DataFrame([inputs])[feature_columns]
+
+if st.button("Predict"):
+    pred, proba = predict_employability(model, scaler, input_df)
     if pred == 1:
         st.success("🎉 The student is predicted to be **Employable**!")
         st.balloons()
@@ -109,18 +117,13 @@ def show_results(pred, proba, input_df):
     st.info(f"Probability of being Employable: {proba[1]*100:.2f}%")
     st.info(f"Probability of being Less Employable: {proba[0]*100:.2f}%")
 
-# --- MAIN ---
-input_df = get_user_input()
+st.markdown('</div>', unsafe_allow_html=True)
 
-if st.button("Predict Employability"):
-    if not all(col in input_df.columns for col in feature_columns):
-        st.error("Input columns mismatch. Please check your feature names and order.")
-    else:
-        pred, proba = predict_employability(model, scaler, input_df)
-        show_results(pred, proba, input_df)
-
+# 📋 Footer
 st.markdown("---")
-st.caption("© 2025 CHOONG MUH IN | Graduate Employability Prediction App | Powered by SVM | For research purposes only.")
-st.caption(" Version 1.0, Last updated: Aug-2025. Developed by Ms.CHOONG MUH IN (TP068331).")
+st.caption("""
+Disclaimer: This prediction model is for research and informational purposes only.  
+Version 1.0, © 2025 CHOONG MUH IN Last updated: August-2025. Developed by Ms.CHOONG MUH IN (TP068331).")
+""")
 
 
