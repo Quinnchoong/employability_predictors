@@ -13,13 +13,11 @@ import pandas as pd
 import numpy as np
 import joblib
 from PIL import Image
-import base64
-from io import BytesIO
 
 # 📋 CONFIG
 st.set_page_config(page_title="🎓 Student Employability Predictor", layout="centered")
 
-# 📋 CSS for background, card, compact layout
+# 📋 CSS: Light blue background & compact layout
 st.markdown("""
 <style>
 .stApp {
@@ -31,12 +29,6 @@ html, body, [class*="css"] {
 .block-container {
     padding-top: 1rem;
     padding-bottom: 1rem;
-}
-.card {
-    background-color: #f7f7f7;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -57,15 +49,13 @@ if model is None or scaler is None:
     st.error("⚠️ Model or scaler file not found.")
     st.stop()
 
-# 📋 Load & show header image
+# 📋 Header Image
 image = Image.open("group-business-people-silhouette-businesspeople-abstract-background_656098-461.avif")
 st.image(image, use_container_width=True)
 
+# 📋 Title & description
 st.markdown("<h2 style='text-align: center;'>🎓 Student Employability Predictor — SVM Model</h2>", unsafe_allow_html=True)
-
-st.markdown("""
-Fill in the input features to predict employability.
-""")
+st.markdown("Fill in the input features to predict employability.")
 
 feature_columns = [
     'GENDER', 'GENERAL_APPEARANCE', 'GENERAL_POINT_AVERAGE',
@@ -80,9 +70,7 @@ def predict_employability(model, scaler, input_df):
     prediction_proba = model.predict_proba(scaled_input)[0]
     return prediction[0], prediction_proba
 
-# 📋 Card container
-st.markdown('<div class="card">', unsafe_allow_html=True)
-
+# 📋 Inputs (organized in columns)
 col1, col2, col3 = st.columns(3)
 inputs = {}
 
@@ -106,6 +94,7 @@ with col3:
 
 input_df = pd.DataFrame([inputs])[feature_columns]
 
+# 📋 Predict Button
 if st.button("Predict"):
     pred, proba = predict_employability(model, scaler, input_df)
     if pred == 1:
@@ -116,8 +105,6 @@ if st.button("Predict"):
 
     st.info(f"Probability of being Employable: {proba[1]*100:.2f}%")
     st.info(f"Probability of being Less Employable: {proba[0]*100:.2f}%")
-
-st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 st.caption("""
