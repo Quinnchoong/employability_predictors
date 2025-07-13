@@ -16,6 +16,18 @@ import joblib
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Student Employability Predictor", layout="centered")
 
+# Add custom background color
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #e6f2ff;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- LOAD MODEL & SCALER ---
 @st.cache_resource
 def load_model():
