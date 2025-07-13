@@ -34,6 +34,8 @@ st.markdown(
 # Add header image
 image = Image.open("group-business-people-silhouette-businesspeople-abstract-background_656098-461.avif")
 st.image(image, use_container_width=True)
+st.image(image, width=600)
+
 
 # --- LOAD MODEL & SCALER ---
 @st.cache_resource
