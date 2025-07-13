@@ -101,5 +101,6 @@ if st.button("Predict Employability"):
 
 st.markdown("---")
 st.caption("© 2025 CHOONG MUH IN | Graduate Employability Prediction App | Powered by SVM | For research purposes only.")
+Version 1.0, Last updated: Aug-2025. Developed by Ms.CHOONG MUH IN (TP068331).
 
 
