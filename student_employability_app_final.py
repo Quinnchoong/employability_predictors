@@ -119,11 +119,8 @@ if st.button("Predict"):
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# 📋 Footer
 st.markdown("---")
 st.caption("""
 Disclaimer: This prediction model is for research and informational purposes only.  
-Version 1.0, © 2025 CHOONG MUH IN Last updated: August-2025. Developed by Ms.CHOONG MUH IN (TP068331).")
-")
-
-
+Version 1.0, © 2025 CHOONG MUH IN  Last updated: August-2025. Developed by Ms.CHOONG MUH IN (TP068331).")
+""")
