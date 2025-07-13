@@ -15,55 +15,28 @@ import joblib
 from PIL import Image
 import base64
 
-# set page & background
+
+# --- CONFIGURATION ---
 st.set_page_config(page_title="Student Employability Predictor", layout="centered")
 
+# Add custom background color
 st.markdown(
     """
     <style>
     .stApp {
         background-color: #e6f2ff;
     }
-    .header {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    .header img {
-        max-width: 300px;
-        height: auto;
-    }
-    .header h1 {
-        color: #003366;
-        font-size: 28px;
-        margin-top: 10px;
-    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# --- HEADER SECTION ---
-# Read image as base64 so it works on Streamlit Cloud too
-def get_base64(file):
-    with open(file, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
+# Add header image
+image = Image.open("group-business-people-silhouette-businesspeople-abstract-background_656098-461.avif")
+st.image(image, use_column_width=True)
 
-img_base64 = get_base64("group-business-people.avif")
-
-st.markdown(
-    f"""
-    <div class="header">
-        <img src="data:image/avif;base64,{img_base64}">
-        <h1>Student Employability Predictor</h1>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Student Employability Predictor", layout="centered")
+# Title
+st.title("🎓 Student Employability Predictor")
 
 # --- LOAD MODEL & SCALER ---
 @st.cache_resource
