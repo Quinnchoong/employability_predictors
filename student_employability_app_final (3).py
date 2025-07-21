@@ -83,5 +83,5 @@ if st.button("Predict"):
     st.info(f"Probability of being Less Employable: {proba[0]*100:.2f}%")
 
 st.markdown("---")
-st.caption(" Disclaimer: This prediction model is for research and informational purposes only.  
-© 2025 Your Name / Your University | Graduate Employability Prediction App | For research purposes only.")
+st.caption(""" Disclaimer: This prediction model is for research and informational purposes only.  
+© 2025 Your Name / Your University | Graduate Employability Prediction App | For research purposes only.""")
